@@ -212,13 +212,14 @@ div#notebook {
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span class="c"># find all ways with the same first and last node_ref (closed ways)</span>
-<span class="n">id_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_id&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cairo</span><span class="o">.</span><span class="n">aggregate</span><span class="p">([{</span><span class="s">&#39;$match&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;type&#39;</span> <span class="p">:</span> <span class="s">&#39;way&#39;</span><span class="p">}},</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="p">[{</span><span class="s">&#39;$match&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;type&#39;</span> <span class="p">:</span> <span class="s">&#39;way&#39;</span><span class="p">}},</span>
                 <span class="p">{</span><span class="s">&#39;$unwind&#39;</span> <span class="p">:</span> <span class="s">&#39;$node_refs&#39;</span><span class="p">},</span>
                 <span class="p">{</span><span class="s">&#39;$group&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s">&#39;_id&#39;</span> <span class="p">:</span> <span class="s">&#39;$id&#39;</span><span class="p">,</span>
                              <span class="s">&#39;first_ref&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s">&#39;$first&#39;</span> <span class="p">:</span> <span class="s">&#39;$node_refs&#39;</span><span class="p">},</span> 
                              <span class="s">&#39;last_ref&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s">&#39;$last&#39;</span> <span class="p">:</span> <span class="s">&#39;$node_refs&#39;</span><span class="p">}}},</span>
                 <span class="p">{</span><span class="s">&#39;$project&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s">&#39;closed&#39;</span><span class="p">:{</span><span class="s">&#39;$eq&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s">&#39;$first_ref&#39;</span><span class="p">,</span> <span class="s">&#39;$last_ref&#39;</span><span class="p">]}}},</span>
-                <span class="p">{</span><span class="s">&#39;$match&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s">&#39;closed&#39;</span> <span class="p">:</span> <span class="bp">True</span><span class="p">}}])]</span>
+                <span class="p">{</span><span class="s">&#39;$match&#39;</span> <span class="p">:</span> <span class="p">{</span><span class="s">&#39;closed&#39;</span> <span class="p">:</span> <span class="bp">True</span><span class="p">}}]</span>
+<span class="n">id_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;_id&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cairo</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span><span class="n">pipeline</span><span class="p">)]</span>
 
 <span class="c"># update them to include area=&#39;yes&#39;</span>
 <span class="n">cairo</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;type&#39;</span><span class="p">:</span><span class="s">&#39;way&#39;</span><span class="p">,</span>
@@ -971,12 +972,28 @@ Nodes whose street address can be checked for consistency against way names: 2
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Conclusion">Conclusion<a class="anchor-link" href="#Conclusion">&#182;</a></h2><p>As previously mentioned, the main problem with the Cairo OSM data is that of it being in a mixture of English and Arabic. I did not address this problem in this project, but it might be possible to use a transliteration API to convert from the English representations to their Arabic alphabet counterparts. However, the data should ideally be searchable using both alphabets, so it makes sense to input and store both representations (as is currently done with the name field.) It would help greatly if Cairo OSM users were to share a set of guidelines for formatting their data.</p>
-<p>As part of the data cleaning I did, roughly 38,000 nodes were updated with a street address value from named ways of which they were part. I deliberately ignored nodes that appeared in more than one way, such as those that would mark the intersection of two or more roads. This leaves around  14,500 nodes that can be updated, and can be the task of further data cleaning.</p>
-<p>Finally, it was very interesting to see that names were more common than address tags in the Cairo OSM dataset. I would also be interested in seeing how users access OSM data in Cairo as opposed to other cities.</p>
+<h3 id="Further-Cleaning-and-Ideas-for-Improvement">Further Cleaning and Ideas for Improvement<a class="anchor-link" href="#Further-Cleaning-and-Ideas-for-Improvement">&#182;</a></h3><h4 id="Addressing-English-vs-Arabic-representations">Addressing English vs Arabic representations<a class="anchor-link" href="#Addressing-English-vs-Arabic-representations">&#182;</a></h4><p>As previously mentioned, the main problem with the Cairo OSM data is that of it being in a mixture of English and Arabic. This makes any grouping or aggregation based on textual fields very difficult. Standardizing the</p>
+<p>One solution might be to use something like Google Input Tools' transliteration API to convert from the English representations to their Arabic alphabet counterparts and vice versa. The data should ideally be searchable using both alphabets, so it makes sense to store both representations (as is currently done with the name field) after the 2-way conversion process.</p>
+<p>In order to address this situation for future data entry, it would be ideal to have these regional conventions taken into account by popular map editing software (e.g. JOSM and iD.) Barring that, the issue can be brought up in a relevant <a href="http://wiki.openstreetmap.org/wiki/Mailing_lists">mailing list</a>, and added to the project Wiki.  Another possibility, since over 80% of the data comes from 20 contributers, is simply to contact them.</p>
+<h4 id="Adding-missing-addresses-to-node-refs-that-appear-on-more-than-one-way">Adding missing addresses to node refs that appear on more than one way<a class="anchor-link" href="#Adding-missing-addresses-to-node-refs-that-appear-on-more-than-one-way">&#182;</a></h4><p>As part of the data cleaning I did, roughly 38,000 nodes were updated with a street address value from named ways of which they were part. Nodes that appeared on more than one way were deliberately ignored to simplify this process. This leaves around  14,500 nodes with missing address values that might be added by further data cleaning in this way.</p>
+<p>The first challenge here is that of systematically breaking ties between the different "parent" ways of these nodes. Many of these nodes might mark the intersection of two or more roads, and so it would make sense for their addresses to convey this information (e.g. by joining the names of the roads with '&amp;'.) However, differentiating those nodes that mark intersections from ones that appear in duplicate ways or ways that are part of a <a href="http://wiki.openstreetmap.org/wiki/Relation:multipolygon">multipolygonal relation</a> is the bigger challenge.</p>
+<h3 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions">&#182;</a></h3><p>It was very interesting to see that names were more common than address tags in the Cairo OSM dataset. My guess is that this is related to the access patterns of Cairo OSM users. Specifically that desired locations are found/specified by their relation to nearby named nodes/ways rather than their addresses. (e.g. 'next to McDonalds on Foo Street' vs. '15 Foo Street'.) The OSM data for different cities would make a good basis for a hypothesis test on how often addresses are used.</p>
 
 </div>
 </div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre> 
+</pre></div>
+
+</div>
+</div>
+</div>
+
 </div>
     </div>
   </div>
