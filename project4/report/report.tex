@@ -7,6 +7,8 @@
 \setlength{\parskip}{0.5em}
 \usepackage{float}
 
+\usepackage{subfig}
+
 \begin{document}
 \renewcommand\thesection{\arabic{section}}
 \author{Mohamed Khodeir}
@@ -35,6 +37,12 @@ The resulting dataset contains around 145 employees with up to 20 features each,
 
 There is an inherent imbalance in this classification task since there are only 18 POI's. This has implications for the expected accuracy, as simply predicting 'Not POI' for all cases would give around 87.5\% accuracy.
 
+\subsection{Missing Data}
+
+Several of the entries in the dataset have unspecified features. The most complete feature is total\_stock\_value with about 14\% missing, and the least is loan\_advances with around 98\% missing values. Table \ref{tab:missing} in the appendix shows the proportion of unspecifed cases for each of the features.
+
+In this project we deal with missing values by considering them to be 0. 
+
 \subsection{Outliers}
 
 Several outliers were detected in the initial exploration of the dataset. Two entries were removed from the dataset. The first containing the total of all financial fields, and the second seemingly completely unrelated (named 'THE TRAVEL AGENCY IN THE PARK'). Two other entries which were outliers on several different fields turned out to be the result of transposition errors; so these were re-entered from the findlaw source pdf.
@@ -45,9 +53,42 @@ Several outliers were detected in the initial exploration of the dataset. Two en
 
 \subsection{Engineering}
 
-I added several features that are nonlinear combinations of given ones. This included the proportion of sent/received emails that came from known POI's, the proportion of emails received that were also addressed to POI's, and others less well-defined.
+I added several features that are nonlinear combinations of given ones. These are:
 
-The feature selection problem was then to reduce this augmented feature set to a subset that does no worse at test-time. 
+\begin{enumerate}
+\item{the proportion of emails sent to known POI's}
+\item{the proportion of emails received from known POI's}
+\item{the proportion of emails received that were also addressed to POI's}
+\item{the proportion of total stock options that were exercised}
+\item{the proportion of exercised to restricted stock options}
+\end{enumerate}
+
+The first 3 features follow the intuition that POI's are more likely to share correspondence. The last 2 are motivated by the idea that POI's may have exercised more stock as part of insider trading.
+
+The feature selection problem was then to reduce this augmented feature set to a subset that does no worse at test-time. The selected subset did not necessarily have to include any of these additional features, however my final submission contains all 5.
+
+Table \ref{tab:with_without_eng} compares the best performance of each model when starting off with the original and augmented datasets respectively. The results were obtained by running feature/model selection steps on both datasets separately. We can see that both the Decision Tree and KNN models benefited considerably while GNB was slightly worse off for the addition of the features.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabular}{llll}
+                                     &                                         & Original Dataset                           &                                  \\ \cline{2-4} 
+\multicolumn{1}{l|}{}                & \multicolumn{1}{l|}{\textbf{Precision}} & \multicolumn{1}{l|}{\textbf{Recall (TPR)}} & \multicolumn{1}{l|}{\textbf{F1}} \\ \hline
+\multicolumn{1}{|l|}{\textbf{GNB}}   & \multicolumn{1}{l|}{0.49188}            & \multicolumn{1}{l|}{0.43900}               & \multicolumn{1}{l|}{0.46394}     \\ \hline
+\multicolumn{1}{|l|}{\textbf{KNN}}   & \multicolumn{1}{l|}{0.42935}            & \multicolumn{1}{l|}{0.35250}               & \multicolumn{1}{l|}{0.38715}     \\ \hline
+\multicolumn{1}{|l|}{\textbf{DTree}} & \multicolumn{1}{l|}{0.36254}            & \multicolumn{1}{l|}{0.86900}               & \multicolumn{1}{l|}{0.51163}     \\ \hline
+\end{tabular}
+\begin{tabular}{llll}
+                                     &                                         & Augmented Dataset                           &                                  \\ \cline{2-4} 
+\multicolumn{1}{l|}{}                & \multicolumn{1}{l|}{\textbf{Precision}} & \multicolumn{1}{l|}{\textbf{Recall (TPR)}} & \multicolumn{1}{l|}{\textbf{F1}} \\ \hline
+\multicolumn{1}{|l|}{\textbf{GNB}}   & \multicolumn{1}{l|}{0.48113}            & \multicolumn{1}{l|}{0.43350}               & \multicolumn{1}{l|}{0.45608}     \\ \hline
+\multicolumn{1}{|l|}{\textbf{KNN}}   & \multicolumn{1}{l|}{0.64294}            & \multicolumn{1}{l|}{0.57800}               & \multicolumn{1}{l|}{0.60874}     \\ \hline
+\multicolumn{1}{|l|}{\textbf{DTree}} & \multicolumn{1}{l|}{0.49283}            & \multicolumn{1}{l|}{0.68700}               & \multicolumn{1}{l|}{0.57393}     \\ \hline
+\end{tabular}
+\end{center}
+\caption{Best results per model with/without the engineered features.}
+\label{tab:with_without_eng}
+\end{table} 
 
 \subsection{Scaling}
 
@@ -106,9 +147,11 @@ A subtler mistake is to fit the hyper-parameters to the test data used for evalu
 
 \section{Validation Strategy}
 
-I used cross-validation to estimate each model's performance. Because of the limited size of the dataset and the imbalanced distribution of POI status, sampling with replacement was used to produce a large number of datasets and stratified sampling was used to split these into training and validation sets. This functionality is combined into the StratifiedShuffleSplit class in sklearn.
+Each time we compare candidate models in hyperparameter-tuning or model selection, we should use a separate set of data than we used to train the models. The importance of this is that we obtain unbiased estimates of the candidate models' performance. This separate evaluation set is called the validation set and the mechanisms for obtaining it are called validation strategies. 
 
-Estimates of any metric can then be averaged over these datasets. This has the advantage of also giving an estimate of variance, so that comparison of hyper-parameter settings or different models is more robust.
+There are many different validation strategies, and one of the most common is cross-validation. In this flavor of validation, we split the complete dataset into a number of smaller ones. Estimates of any metric can then be averaged over these datasets, each taking a turn as the validation set while all others are used for training. This has the advantage of also giving an estimate of variance, so that comparison of hyper-parameter settings or different models is more robust.
+
+I used cross-validation to estimate model. Because of the limited size of the dataset and the imbalanced distribution of POI status, stratified sampling with replacement was used to produce a large number of datasets. This functionality is combined into the StratifiedShuffleSplit class in sklearn.
 
 This method addresses the big mistake mentioned above, but not the subtler one of overfitting to the test data. Ideally we would like to evaluate our models on completely held out data, however due to the scarcity of data in this case, the evaluation (in tester.py) uses the same dataset on which both training and validation are performed. This means our performance estimates will be optimistic.
 
@@ -124,13 +167,13 @@ The Gaussian Naive Bayes classifer models each feature's class-conditional distr
 
 \begin{table}[H]
 \centering
-\caption{Final evaluation (using tester.py) of each of the best obtained feature sets.}
+\caption{Final evaluation (using tester.py) of each of the best obtained feature sets. Table \ref{tab:gnb-anova-full} in the appendix shows the validation results behind the ANOVA feature selection.}
 \label{my-label}
-\begin{tabular}{|l|l|l|l|l|l|l|}
+\begin{tabular}{|l|l|l|l|l|l|}
 \hline
-               & \textbf{\# Features Selected} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall (TPR)} & \textbf{TNR} & \textbf{F1} \\ \hline
-\textbf{ANOVA} & 24 (ALL)                      & 0.67967           & 0.23692            & 0.63150               & 0.68708      & 0.34456     \\ \hline
-\textbf{BFS}   & 8                             & 0.86213           & 0.48113            & 0.43350               & 0.92808      & 0.45608     \\ \hline
+               & \textbf{\# Features Selected} & \textbf{Precision} & \textbf{Recall (TPR)} & \textbf{TNR} & \textbf{F1} \\ \hline
+\textbf{ANOVA} & 24 (ALL)                      & 0.23692            & 0.63150               & 0.68708      & 0.34456     \\ \hline
+\textbf{BFS}   & 8                             & 0.48113            & 0.43350               & 0.92808      & 0.45608     \\ \hline
 \end{tabular}
 \end{table}
 \subsection{K-nearest neighbours (KNN)}
@@ -168,12 +211,12 @@ The results from hyperparameter tuning suggest the best setting of K to be 1, so
 \centering
 \caption{Final evalutation (using tester.py) of each of the best feature/hyperparameter combinations. (K=1)}
 \label{tab:knn-results}
-\begin{tabular}{|l|l|l|l|l|l|l|}
+\begin{tabular}{|l|l|l|l|l|l|}
 \hline
-                       & \textbf{\# Features Selected} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall (TPR)} & \textbf{TNR} & \textbf{F1} \\ \hline
-\textbf{ANOVA}         & 24 (ALL)                      & 0.88727           & 0.63060            & 0.37300               & 0.96638      & 0.46874     \\ \hline
-\textbf{BFS}           & 10                            & 0.87627           & 0.53896            & 0.49800               & 0.93446      & 0.51767     \\ \hline
-\textbf{BFS (more CV)} & 13                            & 0.90093           & 0.64294            & 0.57800               & 0.95062      & 0.60874     \\ \hline
+                       & \textbf{\# Features Selected} & \textbf{Precision} & \textbf{Recall (TPR)} & \textbf{TNR} & \textbf{F1} \\ \hline
+\textbf{ANOVA}         & 24 (ALL)                      & 0.63060            & 0.37300               & 0.96638      & 0.46874     \\ \hline
+\textbf{BFS}           & 10                            & 0.53896            & 0.49800               & 0.93446      & 0.51767     \\ \hline
+\textbf{BFS (more CV)} & 13                            & 0.64294            & 0.57800               & 0.95062      & 0.60874     \\ \hline
 \end{tabular}
 \end{table}
 \subsection{Decision Tree Classifier (DTree)}
@@ -225,19 +268,49 @@ Table \ref{tab:dtree-bfs-full} in the appendix shows the performance of all of t
 \centering
 \caption{Final evalutation (using tester.py) of each of the best feature/hyperparameter combinations (Max Depth = 2, Class Weight = 5:1).}
 \label{dtree-results}
-\begin{tabular}{|l|l|l|l|l|l|l|}
+\begin{tabular}{|l|l|l|l|l|l|}
 \hline
-                  & \textbf{\# Features Selected} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall (TPR)} & \textbf{TNR} & \textbf{F1} \\ \hline
-\textbf{Built-In} & 20                            & 0.77133           & 0.31591            & 0.61350               & 0.79562                          & 0.41706     \\ \hline
-\textbf{BFS}      & 2                             & 0.86400           & 0.49283            & 0.68700               & 0.89123                          & 0.51767     \\ \hline
+                  & \textbf{\# Features Selected} & \textbf{Precision} & \textbf{Recall (TPR)} & \textbf{TNR} & \textbf{F1} \\ \hline
+\textbf{Built-In} & 20                            & 0.31591            & 0.61350               & 0.79562                          & 0.41706     \\ \hline
+\textbf{BFS}      & 2                             & 0.49283            & 0.68700               & 0.89123                          & 0.51767     \\ \hline
 \end{tabular}
 \end{table}
 
 \section{Conclusion}
 
-The KNN model with 13 features (chosen by BFS) and K=1 turns out to produce the best F1-score and best overall accuracy. With more specific domain requirements, we may be able to optimize for different metrics, but in this case, the KNN model produces the best overall classifier. This is the model which i have used in poi\_id.py.
+The KNN model with 13 features (chosen by BFS) and K=1 turns out to produce the best F1-score and (in my opinion), the best compromise between precision and recall. With more specific domain requirements, we may be able to optimize for different metrics, but in this case, the KNN model produces the best overall classifier. This is the model which i have used in poi\_id.py.
 
 \section{Appendix}
+\subsection{Missing Values}
+\begin{table}[H]
+\centering
+\caption{Proportion of missing values for each feature.}
+\label{tab:missing}
+\begin{tabular}{ll}
+\hline
+ total\_stock\_value         & 13.79\% \\
+ total\_payments            & 14.48\% \\
+ email\_address             & 24.14\% \\
+ restricted\_stock          & 24.83\% \\
+ exercised\_stock\_options   & 30.34\% \\
+ expenses                  & 35.17\% \\
+ salary                    & 35.17\% \\
+ other                     & 36.55\% \\
+ from\_messages             & 41.38\% \\
+ from\_poi\_to\_this\_person   & 41.38\% \\
+ from\_this\_person\_to\_poi   & 41.38\% \\
+ shared\_receipt\_with\_poi   & 41.38\% \\
+ to\_messages               & 41.38\% \\
+ bonus                     & 44.14\% \\
+ long\_term\_incentive       & 55.17\% \\
+ deferred\_income           & 66.90\% \\
+ deferral\_payments         & 73.79\% \\
+ restricted\_stock\_deferred & 88.28\% \\
+ director\_fees             & 88.97\% \\
+ loan\_advances             & 97.93\% \\
+\hline
+\end{tabular}
+\end{table}
 
 \subsection{GNB}
 
