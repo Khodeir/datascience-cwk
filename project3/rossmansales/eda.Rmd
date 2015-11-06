@@ -1,0 +1,439 @@
+---
+title: "Rossman Sales Data"
+author: "Mohamed Khodeir"
+date: "October 19, 2015"
+output: html_document
+---
+
+```{r, echo=FALSE}
+sales <- read.csv('train-4.csv')
+stores <- read.csv('store.csv')
+library(ggplot2)
+library(scales)
+library(lubridate)
+```
+
+The dataset I am going to explore is provided by Dirk Rossmann GmbH, Germany's second largest drugstore chain, as part of a regression competition on Kaggle.com. 
+
+The dataset contains daily entries for three years of over one thousand of their stores detailing the number of customers served, and total sales amount as well as information about the day (such as whether or not it was a holiday ). Useful information about the stores (such as the distance to the nearest competitor and store type) is also included in a separate file.
+
+### What features are available?
+
+```{r}
+str(stores)
+```
+
+This dataframe contains the store-specific information. Store, StoreType, Assortment, and Promo2 and PromoInterval are nominal variables. 
+
+These are fairly self-explanatory, except Promo2 which denotes the presence of regular monthly promotions (aside from day-specific promotions in the sales dataframe). PromoInterval specifies the specific combination of months in which this promotion is active. There are only 4 different combinations. Assortment and StoreType characterize each store but their meanings are not specified to us by the data provider.
+
+The combination of Promo2SinceWeek, and Promo2SinceYear is an ordered variable describing the week in which Promo2 became active in the store. The same can be said of the combination of CompetitionOpenSinceMonth and CompetitionOpenSinceYear which together make the ordered variable for the month in which the closest competitor became active. 
+
+CompetitionDistance is the only continuous variable in this dataframe, and this denotes the distance to the closest competitor. It is specified in meters.
+
+```{r}
+str(sales)
+```
+
+This dataframe contains the daily data for each of the stores. The Store feature contains the id which allows us to match from sales data to store-specific data.
+
+Here, Promo, Open, StateHoliday, and SchoolHoliday are nominal variables. Promo is binary and denotes the presence of promotions that day. Open is also binary and indicates whether the store was open. StateHoliday has 4 values which the dataset provider defines in the readme as: a = public holiday, b = Easter holiday, c = Christmas, 0 = None.
+
+DayOfWeek and Date are ordered variables but here Date is taken as nominal. We should fix this:
+```{r}
+sales$Date <- as.Date(sales$Date)
+levels(sales$StateHoliday) <- c('Regular', 'Public Holiday', 'Easter', 'Christmas')
+```
+
+Sales and Customers are the quantitative variables of interest for this project. They are both integer valued in this case but Customers is obviously discrete.
+
+### Exploration
+
+My guiding questions for the exploration will be:
+
+ - Are there more sales during holidays or weekends?
+ - Does the presence of a nearby competitor affect sales?
+ - Is the store type indicative of the amount of customers served?
+ - Do promotions really increase sales?
+ - Are there (cyclic) patterns in sales over time?
+ 
+
+#### Let's first look at the total sales per day
+
+```{r}
+ggplot(sales, aes(x=Date, y=Sales)) +
+  stat_summary(fun.y="sum", geom='line') +
+  scale_x_date()
+```
+
+There do seem to be some cyclical patterns but it is hard to to see all at once. Let's look at a couple of months.
+
+```{r,fig.width=12}
+sales_julyaugust2013 <- subset(sales, Date >= as.Date('2013-07-01') & 
+                                              Date < as.Date('2013-09-01'))
+
+ggplot(sales_julyaugust2013, aes(x=Date, y=Sales)) +
+  stat_summary(fun.y="sum", geom='line') +
+  scale_x_date(breaks=date_breaks('week'))
+
+```
+
+In this plot, the breaks on the x-axis are weekly and it is clear that the peaks occur on Mondays. Interestingly, there seem to be two levels of peaks, occuring on an alternating basis on Mondays. Why are there two different peaks?
+
+What if we look at the number of total promotions per day for the same period.
+
+```{r,fig.width=12}
+ggplot(sales_julyaugust2013,aes(x=Date, y=Promo)) +
+  stat_summary(fun.y="sum", geom='line') +
+  scale_x_date(breaks=date_breaks('week'))
+```
+
+Ah! This is interesting. The large peaks correspond to Mondays where the promotions were active, the low peaks to Mondays without promotions.
+
+Let's now take a look at the total sales grouped by day of week to see any persisting weekly trends.
+
+```{r}
+ggplot(sales, aes(x=DayOfWeek,y=Sales)) + stat_summary(fun.y="sum", geom='bar')
+```
+
+Day 7 of course is Sunday and so that low value probably corresponds to closed stores. Let's confirm that.
+
+```{r}
+ggplot(sales, aes(x=DayOfWeek,y=Open)) + stat_summary(fun.y="sum", geom='bar')
+```
+
+The y-axis numbers show the total number of stores open on that day of the week over the whole 3 year period. We saw in the tables above, however that not all the weekdays are represented equally in the data and more importantly, stores arent always open. So lets take a look at the mean sales per day of week considering only open stores.
+
+```{r}
+open <- subset(sales, Open==1)
+ggplot(open, aes(x=DayOfWeek,y=Sales)) + stat_summary(fun.y="mean", geom='bar')
+```
+
+Well this is interesting. Sundays have almost the same mean as Mondays. It's just that less stores are open on Sundays. Saturday actually has the lowest mean sales. 
+
+#### But going back to the effect of promotions, how much do promotions increase average sales on a store-by-store basis?
+
+```{r,fig.width=12}
+mean_sales_by_store_and_promo <- aggregate(list(Sales=sales$Sales), 
+                                           by=list(Store=sales$Store, 
+                                                   Promo=sales$Promo),
+                                           mean)
+
+ggplot(mean_sales_by_store_and_promo, aes(x=Store,y=Sales,fill=factor(Promo))) +
+  geom_bar(stat='identity') + scale_x_discrete()
+```
+
+It seems quite a sizeable increase for most of the stores. How much more of a relative increase is it? Let's make a histogram of the relative increases.
+
+```{r}
+with_promo <- subset(mean_sales_by_store_and_promo, Promo==1)
+without_promo <- subset(mean_sales_by_store_and_promo, Promo==0)
+
+increase_ratio <- with_promo$Sales/without_promo$Sales;
+stores$increase_ratio <- increase_ratio
+
+qplot(increase_ratio,binwidth=0.05)
+```
+
+The mean is around 2 which is to say that, on average, total sales on promotion days are twice that of non-promotion days. There is seemingly a single store whose average with promotion is less!
+
+```{r}
+with_promo[increase_ratio<1,]
+without_promo[increase_ratio<1,]
+
+```
+
+Does the presence of regular monthly promotions (Promo2) have any effect on the efficacy of daily promotions (Promo)?
+
+```{r}
+table(stores$Promo2)
+ggplot(stores, aes(x=increase_ratio,color = factor(Promo2))) + 
+  geom_density()
+```
+
+Not too much from the looks of it. Does the store type have any bearing in this?
+
+```{r}
+
+ggplot(stores, aes(x=increase_ratio,color = StoreType)) + 
+  geom_density()
+
+```
+
+It seems so! Specifically, stores of type B seem to be hardly affected by promotions in comparison to other types.
+
+What about the assortment?
+
+```{r}
+
+ggplot(stores, aes(x=increase_ratio,color = Assortment)) + 
+  geom_density()
+
+```
+
+Interestingly it seems as though assortments type b has a similar distribution to stores of type b. Lets look at them:
+
+```{r}
+
+subset(stores[,c('Assortment','StoreType')], 
+       Assortment == 'b' | StoreType == 'b')
+
+```
+
+Indeed, it seems that stores with 'b' class Assortments all have a StoreType of 'b', but not the other way around. These designations are not explained by the data source, but such correlation is useful to know about.
+
+#### Let's look at how daily sales are distributed depending on assortment and store type.
+  
+```{r}
+sales <- merge(stores[,c('StoreType','Assortment',
+                         'Store','CompetitionDistance')], 
+               sales,
+               by='Store')
+ggplot(sales, aes(x=StoreType, y=Customers)) + geom_boxplot()
+ggplot(sales, aes(x=Assortment, y=Customers)) + geom_boxplot()
+```
+
+Some differences there. Specifically, it seems again that type 'b' is indicative of high throughput. But this may not be very helpful. Particularly because many of the combinations of store type and assortment have such little representation.
+
+```{r}
+table(stores$Assortment)
+table(stores$StoreType)
+```
+
+But how are daily sales per storetype distributed? Let's look at some density curves.
+
+```{r}
+open <- subset(sales, Open==1) # doing this again to incorporate merged StoreType
+ggplot(data=open, aes(x=Sales)) +
+  geom_density(aes(color=StoreType))
+
+```
+
+The distribution is fairly long-tailed. Let's look at this in log scale.
+
+```{r}
+ggplot(data=open,aes(x=Sales)) +
+  geom_density(aes(color=StoreType)) + scale_x_log10()
+```
+
+Again, storetype b is quite distinctive with more probability density for higher sales. Storetypes a and c have very similar distributions, wheras d is slightly different. Let's do the same for the total number of customers served.
+
+```{r}
+ggplot(data=open,aes(x=Customers)) +
+  geom_density(aes(color=StoreType)) + scale_x_log10()
+```
+
+Customers and Sales should be about linearly correlated.
+
+```{r}
+ggplot(open,aes(x=Customers,y=Sales)) +
+  geom_point(aes(color=StoreType)) + scale_x_log10() + scale_y_log10()
+```
+
+As expected, the relationship is linear but there is an interesting clustering by storetype. For example, its clear here that storetype 'd' is indicative of higher sales per customer. Let's look at the distributions of sales per customer for each storetype.
+
+```{r}
+ggplot(data=open,aes(x=Sales/Customers)) +
+  geom_density(aes(color=StoreType)) + scale_x_log10()
+```
+
+While sales and customer throughput are higher for storetype 'b', the average sales per customer is actually the lowest! And now we can see that storetype 'd' is actually making the most per customer by what seems like a significant margin.
+
+#### Let's now turn to the competition. Does presence of nearby competition decrease total customers served?
+
+```{r}
+
+ggplot(open, aes(x=CompetitionDistance, y=Customers,color=Assortment)) +
+  stat_summary(fun.y='sum', geom='point') + scale_x_log10() + scale_y_log10()
+
+```
+
+Hard to see any trends there. Let's look at the mean instead of the total.
+
+```{r}
+
+ggplot(open, aes(x=CompetitionDistance, y=Customers,color=Assortment)) +
+  stat_summary(fun.y='mean', geom='point') + scale_x_log10() + scale_y_log10()
+
+```
+
+There seems to be a somewhat clearer inverse linear trend there. I think competition distance may have more of an effect on public holidays? Let's see.
+
+```{r}
+open_onholiday <- subset(open, StateHoliday != 'Regular')
+
+
+ggplot(open_onholiday, aes(x=CompetitionDistance, 
+                           y=Customers,color=Assortment)) +
+  stat_summary(fun.y='mean', geom='point') +
+  scale_x_log10() +scale_y_log10() + facet_wrap(~StateHoliday)
+
+```
+
+Perhaps there is a clearer negative linear relationship there? Let's look at the correlation coefficient for all three relationships and ignore missing values.
+
+```{r}
+means_onholiday <- aggregate(list(MeanSalesPublicHoliday=open_onholiday$Sales,
+                                  MeanCustomersPublicHoliday=open_onholiday$Customers),
+                             by=list(Store=open_onholiday$Store),
+                             mean)
+stores <- merge(stores, means_onholiday, by='Store')
+means <- aggregate(list(MeanSales=open$Sales,
+                        MeanCustomers=open$Customers),
+                        by=list(Store=open$Store),
+                        mean)
+stores <- merge(stores, means, by='Store')
+totals <- aggregate(list(TotalSales=open$Sales,
+                        TotalCustomers=open$Customers),
+                        by=list(Store=open$Store),
+                        sum)
+stores <- merge(stores, totals, by='Store')
+
+
+cor(stores$TotalCustomers,stores$CompetitionDistance, use='complete.obs')
+cor(stores$MeanCustomers,stores$CompetitionDistance, use='complete.obs')
+cor(stores$MeanCustomersPublicHoliday,stores$CompetitionDistance, use='complete.obs')
+```
+
+#### Do stores that are open on holidays experience an increase in sales?
+
+As a sanity check, let's see how many stores are still open per holiday type.
+```{r}
+ggplot(sales, aes(x=factor(StateHoliday), y=Open)) +
+  stat_summary(fun.y="mean", geom="bar")
+```
+
+Okay, this is as expected. On regular days (holiday type '0') almost all of the stores are open and a very small fraction stay open on holidays. What store types make up the open stores for each holiday type?
+
+```{r}
+ggplot(sales, aes(x=factor(StateHoliday), y=Open,fill=factor(StoreType))) +
+  stat_summary(fun.y="sum", geom="bar",position="fill")
+```
+
+This is interesting, especially because stores of type 'b' are relatively few. Let's look at the proportion of each type that stays open instead.
+
+```{r}
+ggplot(sales, aes(x=factor(StateHoliday), y=Open,fill=factor(StoreType))) +
+  stat_summary(fun.y="mean", geom="bar",position="dodge")
+```
+
+Oh, it seems we've uncovered something about stores of type 'b'. Almost all of them stay open on holidays!
+
+Finally, on average, how much does each store type make per day on each holiday type.
+
+```{r}
+ggplot(open, aes(x=factor(StateHoliday), y=Sales,fill=StoreType)) +
+  stat_summary(fun.y="mean",position="dodge", geom='bar')
+```
+
+ 
+## Final Plots and Discussion
+
+### Cyclical trends and effect of promotions
+
+First, I wanted to explore that aggregate cyclical trend we saw on sales per day. And I wanted to clearly show the effect of the promotions on the peaks of that trend.
+
+```{r,fig.width=12,fig.height=8}
+
+totals_by_date <- aggregate(list(Sales=sales$Sales,Promo=sales$Promo), 
+                           by=list(Date=sales$Date),
+                           sum)
+sales_by_date <- subset(totals_by_date, 
+                        Date >= as.Date('2014-01-01') & 
+                          Date < as.Date('2015-01-01'))
+
+sales_by_date$quarter<-quarter(sales_by_date$Date)
+
+ggplot(sales_by_date, aes(x=Date, y=Sales))  +
+    geom_line() + facet_wrap(~quarter, ncol=1,scales='free_x') +
+    scale_x_date(breaks=date_breaks("week"), labels=date_format('%b %d')) + 
+    geom_rect(aes(xmin=Date, xmax=Date+1,
+                  ymin = 0,ymax=13310000, fill=Promo),alpha=0.3) +
+  ggtitle('Daily sales totals per quarter of 2014')
+```
+
+This plot shows a very clear weekly cycle. When there is a promotion (shown by blue shading), sales peak on Mondays and dip throughout the week, experiencing a slight rise again on Fridays. In weeks wihtout promotions, sales are relatively steady throughout the week, with very slight peaks on Mondays and Fridays. There are deviations from this cycle during the year. For example, Friday April 18th and Monday April 21st are Easter Holidays so have no sales, and the unexpectedly high peak on Dec 22nd is clearly due to the Christmas effect.
+
+### Effect of promotions on Store Types
+
+The effect of promotions on sales seemed to be dependant on the store type. Here ive reproduced what I think was very informative plot from the exploration section.
+
+```{r}
+ggplot(stores, aes(x=increase_ratio)) +
+  geom_density(aes(color=StoreType)) +
+  geom_density(color='black',aes(size="Weighted Avg", shape = NA)) +
+  guides(size=guide_legend("")) +
+  xlab('Ratio of Average Sales With/Without Promotions') +
+  ylab('Probability Density') +
+  ggtitle('The effect of promotions on different store types.')
+```
+
+The most obvious bit of information shown in this graph is that stores of type 'b' seem to be the least affected by promotions. Here, we also see that store which does slightly worse during promotions.
+
+Stores of type 'a' are the most affected by promotions, which may be good news because that is also the most numerous type. The black line shows us the overall effect, and we can see that it is to roughly double sales.
+
+There is also a curious bimodality to the distributions (particularly for types b and c) which may be explained by an interaction with some other variable.
+
+### Sales on Holidays by Store Type
+
+Finally I wanted to address the question of whether stores make more average sales on holidays, and show the interaction of storetype.
+
+```{r}
+weighted_avg <- aggregate(list(Sales=open$Sales), 
+                          by=list(StateHoliday=open$StateHoliday),
+                          mean)
+
+weighted_avg$StoreType <- 'Weighted Avg'
+
+means_by_holiday_and_type <- aggregate(list(Sales=open$Sales),
+                                      by=list(StateHoliday=open$StateHoliday,
+                                              StoreType=open$StoreType),
+                                      mean)
+
+meansbyholiday <- rbind(weighted_avg, means_by_holiday_and_type)
+
+# get the sales difference between this entry and the same storetype on regular days
+g <- function(entry){
+  this_sales <- as.numeric(entry['Sales'])
+  regular <- subset(meansbyholiday, StateHoliday=='Regular' &
+                                      StoreType==entry['StoreType'])
+  as.numeric(this_sales-regular$Sales[1])
+}
+
+meansbyholiday$diff <- apply(meansbyholiday, 1, g)
+meansbyholiday$StoreType <- factor(meansbyholiday$StoreType, 
+                                   levels=c('a','b','c','d','Weighted Avg'))
+
+exclude_regular <- subset(meansbyholiday, StateHoliday!='Regular')
+
+ggplot(exclude_regular, aes(y=diff,x=StoreType,fill=StoreType)) +
+  geom_bar(stat='identity',position='dodge') +
+  facet_wrap(~StateHoliday) +
+  scale_x_discrete(breaks=c()) + xlab('') +
+  ylab('Change in Sales Compared to Regular Days') +
+  ggtitle('Change in Average Daily Sales on Holidays')
+```
+
+Here we can see some stark differences among store types. Store type b has higher average daily sales for all holidays (very slight difference on Christmas). Overall average sales are significantly higher for all holidays. This is probably due to the fact that stores of type 'b' (which have higher average sales in any case) represent the lion's share of open stores on holidays.
+
+Stores of type c are not open on Christmas or Easter, but have a slight increase in sales on other public holidays. On the other hand, store types a and d do significantly worse on all holidays. 
+
+## Reflections
+
+One of the more interesting aspects about this dataset is that it was provided by the company as part of an ongoing regression competition. The task is to produce a model given the observed data that accurately predicts Sales for given stores on given dates. 
+
+This naturally led to a slight bias on the part of the exploratory analysis to try and identify any regularities in sales and obvious relationships to other variables. 
+
+I was surprised at some of the relationships (and lack therof) in the data. For example, I expected the distance to the nearest competitor for each store to be positively correlated to its average daily sales. That is, drug stores should sell more if they fewer nearby competitors. This turned out to be false. In fact there was a small negative correlation. In hindsight this also makes sense since it suggests that areas with more drug stores tend to have higher daily sales.
+
+A not so surprising finding was the positive effect of promotions on total sales. When compiling the final plot for the cyclical trends and effects of promotions, I considered aggregating the entire three year period into a single plot. I decided to focus on just 2014, because simply aggregating by day of month would have obscured the weekly cycle. 
+
+It would have been very interesting to have been able to map the stores geographically and explore any trends there. This would have also shed some light on the effects of nearby competitors discussed above. However, the stores were intentionally anonymized, along with their characteristics (i.e. StoreType, Assortment).
+
+Despite the anonymization of store types, some clear differences were identified. For example, stores of type 'b' remain mostly open on holidays and have higher throughput (sales and customers), suggesting that they are larger stores. They are also less affected by promotions. This information would, no doubt, be useful in the regression challenge.
+
+My analysis focused on some guiding questions but did not make use of all of the variables in the dataset, such as the date the closest competitor became active, and the monthly promotion intervals. These may turn out to contain hidden patterns and should ideally be explored further. 
+
+
+
+
