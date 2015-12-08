@@ -1,0 +1,263 @@
+---
+title: "AB Test"
+author: "Mohamed Khodeir"
+date: "November 22, 2015"
+output: html_document
+---
+The following report details the design of an AB test for a proposed feature on udacity.com. The feature being tested is to advise a perspective student against enrolling in a course if he indicates his intention to commit less than 5 hours a week to course material. Udacity.com intends that this change significantly reduce the number of students to enroll while not significantly reducing the percentage of them to eventually pay for the course. 
+
+The hypothesis was that this might set clearer expectations for students upfront, thus reducing the number of frustrated students who left the free trial because they didn't have enough time—without significantly reducing the number of students to continue past the free trial and eventually complete the course. 
+
+### Available Metrics
+
+
+| Title                     | Description                                                                                                                                                                                                  | Practical Significance Threshold | Baseline Value | Use        |
+|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|----------------|------------|
+| Number of cookies         | That is, number of unique cookies to view the course overview page.                                                                                                                                          | 3000                             | 40000          | Invariant  |
+| Number of user-ids        | That is, number of users who enroll in the free trial.                                                                                                                                                       | 50                               | 660            |            |
+| Number of clicks          | That is, number of unique cookies to click the "Start free trial" button (which happens before the free trial screener is trigger).                                                                          | 240                              | 3200           | Invariant  |
+| Click-through-probability | That is, number of unique cookies to click the "Start free trial" button divided by number of unique cookies to view the course overview page.                                                               | 0.01                             | 0.08           | Invariant  |
+| Gross conversion          | That is, number of user-ids to complete checkout and enroll in the free trial divided by number of unique cookies to click the "Start free trial" button.                                                    | 0.01                             | 0.20625        | Evaluation |
+| Retention                 | That is, number of user-ids to remain enrolled past the 14-day boundary (and thus make at least one payment) divided by number of user-ids to complete checkout.                                             | 0.01                             | 0.53           |            |
+| Net conversion            | Net conversion: That is, number of user-ids to remain enrolled past the 14-day boundary (and thus make at least one payment) divided by the number of unique cookies to click the "Start free trial" button. | 0.0075                           | 0.1093125      | Evaluation |
+
+### Estimating Variance Analytically
+
+We are estimating the variance given a sample size of 5000 pageviews. This represents 12.5% of the 40000 daily page views. 
+
+**Gross Conversion**
+
+In order to calculate this metric, we need to know how many people (out of the 5000 pageviews) are going to click "Start free trial". 
+
+To do this I am just going to assume, naively, that the number of people clicking is the same as 
+
+Under the assumption that enrollment in the course follows a binomial distribution with probability 0.20625, we can approximate its variance analytically using:
+
+The sampling distribution's std:
+
+$$\sigma_{\bar x} = \frac{\sigma}{\sqrt{n}}$$
+
+Binomial std:
+
+$$\sigma = \sqrt{k p (1-p)}$$
+
+Thus:
+
+$$\sigma_{\bar x} = \sqrt{\frac{  k p (1-p) }{n} }$$
+
+In our case, a user either enrols or doesnt, so we have $k = 1$
+
+$$\sigma_{\bar x} = \sqrt{\frac{ 0.20625 (1-0.20625) }{400} } = 0.02023$$
+
+We can also estimate this by generating a large number of gross conversion rates and calculating the variance. 
+
+```{r}
+# a large number of samples of gross conversion rate with sample size 400
+X = rbinom(1000000,size=400,prob=0.20625)/400 
+
+print(sd(X))
+
+
+```
+
+### Sizing
+$$SE = \frac{\sigma_{metric}}{\sqrt{N}}$$
+$$\beta = P(Z < Z_{*} \cdot SE | \mu = d_{min} , \sigma = SE)$$
+
+At $\alpha = 0.05$  we have $Z_{*} = 1.959964$.
+
+We set $\beta = 0.2$.
+
+#### Gross Converstion
+
+$$d_{min} = 0.01$$
+$$\sigma_{metric} = 0.02023$$
+$$N_{clicks} = 25699$$
+$$N_{pageviews} = 2N_{clicks}\frac{40000}{3200} = 642475$$
+With Bonferroni Correction for 3 metrics, $\alpha = 0.0167$:
+$$N_{clicks} = 34277$$
+$$N_{pageviews} = 856925$$
+With Bonferroni Correction for 2 metrics, $\alpha = 0.025$:
+$$N_{clicks} = 31122$$
+$$N_{pageviews} = 778050$$
+
+#### Retention
+
+$$d_{min} = 0.01$$
+$$\sigma_{metric} = 0.054949$$
+$$N_{enrolls} = 39104$$
+$$N_{pageviews} = 4739879$$
+With Bonferroni Correction for 3 metrics, $\alpha = 0.0167$:
+$$ N_{enrolls} = 52155$$
+$$N_{pageviews} = 6321818$$
+
+#### Net Conversion
+
+$$d_{min}=0.0075$$
+$$\sigma_{metric} = 0.0156$$
+$$ N_{clicks} = 27169 $$
+$$ N_{pageviews} = 679225 $$
+With Bonferroni Correction for 3 metrics, $\alpha = 0.0167$:
+$$ N_{clicks} = 36222 $$
+$$ N_{pageviews} = 905550 $$
+With Bonferroni Correction for 2 metrics, $\alpha = 0.025$:
+$$N_{clicks} = 32902$$
+$$N_{pageviews} = 822550$$
+
+#### Sanity Checks
+
+##### Number of cookies
+
+$$ N_{control} =  345543$$
+$$ N_{exp} = 344660 $$
+$$ \hat{p}_{control} = \frac{345543}{345543+344660} = 0.5006397 $$
+
+To sanity check this proportion, I will see if it lies in the 95% confidence interval around the expected proportion, 0.5. (I will do this assuming we are sampling $N_{exp} + N_{control}$ times from a fair binomial distribution.)
+
+$$ \sigma = \sqrt{0.5*0.5} $$
+$$ SE = \frac{\sigma}{\sqrt{N_{control} + N_{exp}}} = \sqrt{\frac{0.25}{690203}} = 0.0006018407403$$
+$$ z_{star} = 1.96 $$
+
+Then the margin of error is:
+
+$$ m_{error} = z_{star}*SE  = 0.00118$$
+
+And the confidence interval is:
+
+$$ 0.5 - m_{error} < p <  0.5 + m_{error}$$
+$$ 0.4988 < p <  0.5012$$
+
+Since $0.4988 < 0.5006397 < 0.5012$, the distribution of cookies passes our sanity check.
+
+##### Number of clicks
+
+$$ N_{control} =  28378$$
+$$ N_{exp} = 28325 $$
+$$ \hat{p}_{control} = \frac{28378}{28378+28325} = 0.5005 $$
+
+$$ \sigma = \sqrt{0.5*0.5} = 0.25$$
+$$ SE = \sqrt{\frac{0.25}{56703}} = 0.0021$$
+$$ z_{star} = 1.96 $$
+
+Then the margin of error is:
+
+$$ m_{error} = 0.0042$$
+
+And the confidence interval is:
+
+$$ 0.4958 < p <  0.5042$$
+
+Since $0.4988 <  0.5042 < 0.5012$, the distribution of clicks also passes our sanity check.
+
+
+##### Click-through probability
+
+$$ p_{control} =  \frac{28378}{345543} = 0.08212581357$$
+$$ p_{exp} = \frac{28325}{344660} = 0.08218244067$$
+$$p_{diff} =  0.0822 - 0.0821 = 0.0001$$
+$$ p_{pooled} = \frac{28378+28325}{345543+344660} = 0.0821540909$$
+
+
+
+I want to do a z-test on the difference of $p_{control}$ and $p_{exp}$. Assuming a binomial distribution for clicks given pageview, we can write:
+
+$$\sigma_{pooled}^2 =  0.0821540909(1-0.0821540909)  = 0.07540479625$$
+
+$$ SE_{pooled} = \sqrt{ 0.07540479625 (\frac{1}{345543}+\frac{1}{344660}) } = 0.0006610608157 $$
+
+$$ z_{star} = 1.96 $$
+
+Then the margin of error is:
+
+$$ m_{error} = 0.001295679199$$
+
+And the confidence interval is:
+
+$$ - 0.001295649826 < diff < 0.001295649826 $$
+
+So he click-through probability also passes our sanity check.
+
+##### Click-through probability
+
+$$ p_{control} =  \frac{28378}{345543} = 0.0821$$
+$$ p_{exp} = \frac{28325}{344660} = 0.0822$$
+
+Assuming a binomial distribution for clicks given pageview, we can write:
+
+
+$$ SE_{control} = \sqrt{\frac{p_{control}(1-p_{control})}{N_{control}}} =  0.00047$$
+
+$$ z_{star} = 1.96 $$
+
+Then the margin of error is:
+
+$$ m_{error} = 0.0009$$
+
+And the confidence interval is:
+
+$$ 0.0812 < p <  0.0830$$
+
+Since $0.0812 < 0.0822 <  0.0830$, the click-through probability also passes our sanity check.
+
+#### Evaluation 
+
+##### Gross Conversion
+$$ N_{control} = 17293 $$
+$$ N_{exp} = 17260 $$
+$$ p_{control} = 3785/17293 = 0.2188746892 $$
+$$ p_{exp} = 3423/17260 = 0.1983198146 $$
+$$ p_{diff} = -0.0205548746 $$
+
+$$ \sigma_{control}^2 = 0.2188746892(1-0.2188746892) = 0.1709685596 $$
+$$ \sigma_{exp}^2 = 0.1983198146(1-0.1983198146) = 0.1589890657 $$
+
+$$SE_{diff} = \sqrt{\frac{\sigma_{control}^2}{N_{control}} + \frac{\sigma_{exp}^2}{N_{exp}}} $$
+
+$$ SE_{diff} = \sqrt{\frac{0.1709685596}{17293} + \frac{0.1589890657}{17260}} = 0.004370125116 $$
+
+$$z_{star} = 1.96 $$
+$$ margin\_error = 0.008565445227$$
+
+CI (around point estimate of effect-size): 
+$$ -0.0205548746 - 0.008565445227 < p_{diff} < -0.0205548746 + 0.008565445227$$
+$$ -0.02912031983 < p_{diff} < -0.01198942937$$
+
+With Bonferroni Correction for 2 metrics, $\alpha = 0.025$:
+
+$$z_{star} = 2.241 $$
+$$ margin\_error = 0.0097933941$$
+
+CI (around point estimate of effect-size): 
+$$ -0.0303482687 < p_{diff} < -0.0107614805$$
+
+These results are statistically significant, since the confidence interval does not include 0. They are also practically significant since $-0.0303482687 < p_{diff} < -0.0107614805 < -0.01$.
+
+##### Net Conversion
+
+$$ N_{control} = 17293 $$
+$$ N_{exp} = 17260 $$
+$$ p_{control} = 2033/17293 =  0.1175620193$$
+$$ p_{exp} = 1945/17260 = 0.1126882966$$
+$$ p_{diff} = -0.0048737227 $$
+
+$$ \sigma_{control}^2 = 0.1175620193(1-0.1175620193) = 0.1037411909 $$
+$$ \sigma_{exp}^2 = 0.1126882966(1-0.1126882966) = 0.09998964441 $$
+
+$$ SE_{diff} = \sqrt{\frac{0.1037411909}{17293} + \frac{0.09998964441}{17260}} = 0.003433973029 $$
+
+$$z_{star} = 1.96 $$
+$$ margin\_error = 0.006730587137$$
+
+CI (around point estimate of effect-size): 
+$$ -0.0048737227 - 0.006730587137 < p_{diff} < -0.0048737227 + 0.006730587137$$
+$$ -0.01160430984 < p_{diff} < 0.001856864437$$
+
+With Bonferroni Correction for 2 metrics, $\alpha = 0.025$:
+
+$$z_{star} = 2.241 $$
+$$ margin\_error = 0.007695533558$$
+
+CI (around point estimate of effect-size): 
+$$ -0.01256925626 < p_{diff} < 0.002821810858$$
+
+These results are not statisitcally significant since the confidence interval includes 0. They are also not practically signifcant since $-0.01256925626 < -0.0075 <  0.002821810858 < 0.0075$.

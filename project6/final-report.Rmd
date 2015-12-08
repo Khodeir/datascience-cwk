@@ -1,0 +1,118 @@
+---
+title: "Final Report"
+author: "Mohamed Khodeir"
+date: "December 8, 2015"
+output: html_document
+---
+## Experiment Design
+
+It is important to keep in mind the experiment hypothesis when considering design choices. So I will include it here:
+
+“The hypothesis was that this might set clearer expectations for students upfront, thus reducing the number of frustrated students who left the free trial because they didn't have enough time—without significantly reducing the number of students to continue past the free trial and eventually complete the course.”
+
+## Metric Choice
+
+
+**Number of cookies**
+
+The total unique pageviews was important as an invariant metric firstly because it serves as a good sanity check of the group assigning mechanism. 
+It should be completely unaffected by the proposed change, so it is not suitable as an evaluation metric.
+
+**Number of user-ids**
+
+The number of users to enroll should be reduced, assuming the number of clicks stays the same in the experiment. Therefore, this can’t be used as an invariant metric.
+This suggests that it can be used as an evaluation metric, provided the number of clicks is also tracked as an invariant metric. However, opt instead to use gross conversion since - as a probability - it is more amenable to analysis.
+
+**Number of clicks**
+
+The number of clicks to the start free trial button is meant to be unchanged since the proposed feature only comes into effect after the user has already clicked. This, and the fact that it is the unit of analysis for both gross and net conversion make it an ideal and necessary invariant metric. 
+
+**Click-through-probability**
+
+The click-through-probability also should remain unchanged for the same reasons (as number of clicks and cookies), but because it is simply a ratio of clicks to total cookies and these are both used as invariant metrics, it would be redundant to include.
+
+**Gross conversion**
+
+Gross conversion concerns the first part of the stated experiment’s hypothesis. By directing those who indicate less than 5 hour weekly commitment to access the course material for free, the proposed feature should reduce the number of students who enroll. This makes it a necessary evaluation metric. 
+
+**Net conversion**
+
+Net conversion concerns the second part of our hypothesis. Namely, the number of students to continue past the free trial is meant to be reduced insignificantly (or remain unchanged.)
+This is the truly crucial metric for our purposes, so it is quite necessary as an evaluation metric.
+
+**Retention**
+
+Retention can be used as an evaluation metric. We would expect its denominator  - the number of user-ids - to decrease and its numerator - the number of users to remain enrolled past the 14-day boundary -  to be relatively unchanged. 
+However, this is not a necessary metric as its purposes are served by the combination of gross and net conversion which form a more complete and easily interpretable evaluation.
+ 
+## Measuring Standard Deviation
+
+
+| Metric           | Analytic Standard Deviation |
+|------------------|-----------------------------|
+| Gross Conversion | 0.02023                     |
+| Net Conversion   | 0.01560                     |
+
+I expect both estimates for gross and net conversion to be fairly faithful to the empirical estimate. For one thing, they both have the same unit of analysis as the unit of diversion - the cookie. Also, I have no reason to suspect the baseline values of being inaccurate. 
+
+## Sizing
+
+### Number of Samples vs. Power
+
+I am not using the Bonferroni correction for multiple comparisons. The feature being tested will only be considered successful if both the gross conversion is significantly reduced and the net conversion is relatively unchanged. Therefore, I do not need to correct for the increased likelihood of either one of my comparisons being erroneously significant.
+
+The number of pageviews I will need is thus: 679,300
+
+### Duration vs. Exposure
+
+I chose to direct 100% of the traffic to the experiment. Under normal circumstances for Udacity, the experiment should take little less than 17 days to complete.
+
+I have incomplete information for this decision, because I do not know the number of other experiments that need to run, and the proportions of the user base they would need in order to complete in a reasonable duration. However, the change does not seem risky, and so we should want to complete the experiment in the minimum possible duration. 
+
+Concern:
+Since we need at least 14 days to pass between a user enrolling, and Udacity checking the corresponding payments, does that not mean that our experiment must run for an additional 14 days, thus making my total duration 31 days? Otherwise, Udacity would be checking the payments of users who clicked and enrolled before the change came into effect.
+
+## Experiment Analysis
+
+###Sanity Checks
+
+
+| Metric            | Confidence Interval (95%) | Observed Value | Passes Sanity Check? |
+|-------------------|---------------------------|----------------|----------------------|
+| Number of cookies | [0.4988, 0.5012]           | 0.5006         | Yes                  |
+| Number of clicks  | [0.4958, 0.5042]           | 0.5005         | Yes                  |
+
+### Result Analysis
+**Effect Size Tests**
+
+| Metric           | Confidence Interval (95%) | Statistically Significant? | Practically Significant? |
+|------------------|---------------------------|----------------------------|--------------------------|
+| Gross Conversion | [-0.0291, -0.012]         | Yes                        | Yes                      |
+| Net Conversion   | [-0.0116, 0.0019]         | No                         | No                       |
+
+**Sign Tests**
+
+| Metric           | P-value | Statistically Significant ($\alpha=0.05$) |
+|------------------|---------|-------------------------------------------|
+| Gross Conversion | 0.0026  | Yes                                       |
+| Net Conversion   | 0.6776  | No                                        |
+
+
+
+**Summary**
+Again, I am not using the Bonferroni correction for multiple comparisons. The feature being tested will only be considered successful if both the gross conversion is significantly reduced and the net conversion is not. Therefore, I do not need to correct for the increased likelihood of either one of my comparisons being erroneously significant.
+
+## Recommendation
+
+My recommendation for Udacity is that the feature in question be implemented. The tests have shown that it is very likely (95%) that the feature will reduce the number of students enrolling for the course without significantly decreasing the proportion who end up paying (and staying enrolled.) 
+
+This means that Udacity coaches will be able to devote more time to each enrolled student. Overall, students will have a better relationship with Udacity, as those who enrolled will have more support and those who didn’t will have been advised against potentially wasting their time and money.
+## Follow-Up Experiment
+
+I would be interested in running an experiment to test the effect of email status/progress reports on student retention. My conjecture is that a student’s motivation and commitment to their online courses may decrease over time. This can first be checked against observational data from Udacity’s records.
+
+If it is well supported by observational data, I would hypothesize that a weekly recognition of accomplishments in the course, as well as time spent on online materials (that Udacity can track), could have a positive effect on a student’s level of involvement in the course. This would translate into higher retention and ultimately higher completion rates.
+
+If we choose the metrics to be completion and retention rates, and the unit of diversion to be the user-id, then this will necessarily be a long-term experiment - perhaps lasting a full year. However, weekly emails are not a very risky feature, and we can allow for the user to opt-out, in which case a third metric would be opt-out rates.
+
+Instead, we can also make use of the well supported notion that “more time spent leads to higher completion rates” and use “time spent on online course materials” as our metric. This can be a shorter experiment, spanning only a few months.
