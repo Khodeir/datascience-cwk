@@ -88,6 +88,9 @@ img {
 <p>Net conversion concerns the second part of our hypothesis. Namely, the number of students to continue past the free trial is meant to be reduced insignificantly (or remain unchanged.) This is the truly crucial metric for our purposes, so it is quite necessary as an evaluation metric.</p>
 <p><strong>Retention</strong></p>
 <p>Retention can be used as an evaluation metric. We would expect its denominator - the number of user-ids - to decrease and its numerator - the number of users to remain enrolled past the 14-day boundary - to be relatively unchanged. However, this is not a necessary metric as its purposes are served by the combination of gross and net conversion which form a more complete and easily interpretable evaluation.</p>
+<p><strong>Summary</strong></p>
+<p>The invariant metrics I am using are the Number of Cookies (unique pageviews) and the Number of Clicks (to the free trial button).</p>
+<p>The evaluation metrics are Gross and Net Conversion. A successful outcome for the experiment is that Gross Conversion is significantly decreased <strong>and</strong> Net conversion does not (significantly decrease).</p>
 </div>
 <div id="measuring-standard-deviation" class="section level2">
 <h2>Measuring Standard Deviation</h2>
@@ -121,7 +124,7 @@ img {
 <div id="duration-vs.exposure" class="section level3">
 <h3>Duration vs. Exposure</h3>
 <p>I chose to direct 100% of the traffic to the experiment. Under normal circumstances for Udacity, the experiment should take little less than 17 days to complete.</p>
-<p>I have incomplete information for this decision, because I do not know the number of other experiments that need to run, and the proportions of the user base they would need in order to complete in a reasonable duration. However, the change does not seem risky, and so we should want to complete the experiment in the minimum possible duration.</p>
+<p>I have incomplete information for this decision, because I do not know the number of other experiments that need to run, and the proportions of the user base they would need in order to complete in a reasonable duration. However, the change does not seem risky since it only slightly perturbs the a single usecase, and so we should want to complete the experiment in the minimum possible duration.</p>
 <p>Concern: Since we need at least 14 days to pass between a user enrolling, and Udacity checking the corresponding payments, does that not mean that our experiment must run for an additional 14 days, thus making my total duration 31 days? Otherwise, Udacity would be checking the payments of users who clicked and enrolled before the change came into effect.</p>
 </div>
 </div>
@@ -203,7 +206,8 @@ img {
 </tr>
 </tbody>
 </table>
-<p><strong>Summary</strong> Again, I am not using the Bonferroni correction for multiple comparisons. The feature being tested will only be considered successful if both the gross conversion is significantly reduced and the net conversion is not. Therefore, I do not need to correct for the increased likelihood of either one of my comparisons being erroneously significant.</p>
+<p><strong>Summary</strong></p>
+<p>Again, I am not using the Bonferroni correction for multiple comparisons. The feature being tested will only be considered successful if both the gross conversion is significantly reduced and the net conversion is not. Therefore, I do not need to correct for the increased likelihood of either one of my comparisons being erroneously significant.</p>
 </div>
 </div>
 <div id="recommendation" class="section level2">
@@ -213,7 +217,7 @@ img {
 <p>I would be interested in running an experiment to test the effect of email status/progress reports on student retention. My conjecture is that a student’s motivation and commitment to their online courses may decrease over time. This can first be checked against observational data from Udacity’s records.</p>
 <p>If it is well supported by observational data, I would hypothesize that a weekly recognition of accomplishments in the course, as well as time spent on online materials (that Udacity can track), could have a positive effect on a student’s level of involvement in the course. This would translate into higher retention and ultimately higher completion rates.</p>
 <p>If we choose the metrics to be completion and retention rates, and the unit of diversion to be the user-id, then this will necessarily be a long-term experiment - perhaps lasting a full year. However, weekly emails are not a very risky feature, and we can allow for the user to opt-out, in which case a third metric would be opt-out rates.</p>
-<p>Instead, we can also make use of the well supported notion that “more time spent leads to higher completion rates” and use “time spent on online course materials” as our metric. This can be a shorter experiment, spanning only a few months.</p>
+<p>Instead of measuring completion rates, we can also make use of the well supported notion that “more time spent course leads to higher completion rates” and use “time spent on online course materials” as our metric. This can be a shorter experiment, possibly spanning only a few months.</p>
 </div>
 
 

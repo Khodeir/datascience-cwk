@@ -44,6 +44,12 @@ This is the truly crucial metric for our purposes, so it is quite necessary as a
 
 Retention can be used as an evaluation metric. We would expect its denominator  - the number of user-ids - to decrease and its numerator - the number of users to remain enrolled past the 14-day boundary -  to be relatively unchanged. 
 However, this is not a necessary metric as its purposes are served by the combination of gross and net conversion which form a more complete and easily interpretable evaluation.
+
+**Summary**
+
+The invariant metrics I am using are the Number of Cookies (unique pageviews) and the Number of Clicks (to the free trial button). 
+
+The evaluation metrics are Gross and Net Conversion. A successful outcome for the experiment is that Gross Conversion is significantly decreased **and** Net conversion does not (significantly decrease).
  
 ## Measuring Standard Deviation
 
@@ -67,7 +73,7 @@ The number of pageviews I will need is thus: 679,300
 
 I chose to direct 100% of the traffic to the experiment. Under normal circumstances for Udacity, the experiment should take little less than 17 days to complete.
 
-I have incomplete information for this decision, because I do not know the number of other experiments that need to run, and the proportions of the user base they would need in order to complete in a reasonable duration. However, the change does not seem risky, and so we should want to complete the experiment in the minimum possible duration. 
+I have incomplete information for this decision, because I do not know the number of other experiments that need to run, and the proportions of the user base they would need in order to complete in a reasonable duration. However, the change does not seem risky since it only slightly perturbs the a single usecase, and so we should want to complete the experiment in the minimum possible duration. 
 
 Concern:
 Since we need at least 14 days to pass between a user enrolling, and Udacity checking the corresponding payments, does that not mean that our experiment must run for an additional 14 days, thus making my total duration 31 days? Otherwise, Udacity would be checking the payments of users who clicked and enrolled before the change came into effect.
@@ -100,6 +106,7 @@ Since we need at least 14 days to pass between a user enrolling, and Udacity che
 
 
 **Summary**
+
 Again, I am not using the Bonferroni correction for multiple comparisons. The feature being tested will only be considered successful if both the gross conversion is significantly reduced and the net conversion is not. Therefore, I do not need to correct for the increased likelihood of either one of my comparisons being erroneously significant.
 
 ## Recommendation
@@ -115,4 +122,4 @@ If it is well supported by observational data, I would hypothesize that a weekly
 
 If we choose the metrics to be completion and retention rates, and the unit of diversion to be the user-id, then this will necessarily be a long-term experiment - perhaps lasting a full year. However, weekly emails are not a very risky feature, and we can allow for the user to opt-out, in which case a third metric would be opt-out rates.
 
-Instead, we can also make use of the well supported notion that “more time spent leads to higher completion rates” and use “time spent on online course materials” as our metric. This can be a shorter experiment, spanning only a few months.
+Instead of measuring completion rates, we can also make use of the well supported notion that “more time spent course leads to higher completion rates” and use “time spent on online course materials” as our metric. This can be a shorter experiment, possibly spanning only a few months. 
