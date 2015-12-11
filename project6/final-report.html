@@ -70,7 +70,7 @@ img {
 <div id="experiment-design" class="section level2">
 <h2>Experiment Design</h2>
 <p>It is important to keep in mind the experiment hypothesis when considering design choices. So I will include it here:</p>
-<p>“The hypothesis was that this might set clearer expectations for students upfront, thus reducing the number of frustrated students who left the free trial because they didn’t have enough time—without significantly reducing the number of students to continue past the free trial and eventually complete the course.”</p>
+<p>“The hypothesis was that this might set clearer expectations for students upfront, thus reducing the number of frustrated students who left the free trial because they didn’t have enough time without significantly reducing the number of students to continue past the free trial and eventually complete the course.”</p>
 </div>
 <div id="metric-choice" class="section level2">
 <h2>Metric Choice</h2>
@@ -124,8 +124,8 @@ img {
 <div id="duration-vs.exposure" class="section level3">
 <h3>Duration vs. Exposure</h3>
 <p>I chose to direct 100% of the traffic to the experiment. Under normal circumstances for Udacity, the experiment should take little less than 17 days to complete.</p>
-<p>I have incomplete information for this decision, because I do not know the number of other experiments that need to run, and the proportions of the user base they would need in order to complete in a reasonable duration. However, the change does not seem risky since it only slightly perturbs the a single usecase, and so we should want to complete the experiment in the minimum possible duration.</p>
-<p>Concern: Since we need at least 14 days to pass between a user enrolling, and Udacity checking the corresponding payments, does that not mean that our experiment must run for an additional 14 days, thus making my total duration 31 days? Otherwise, Udacity would be checking the payments of users who clicked and enrolled before the change came into effect.</p>
+<p>I have incomplete information for this decision, because I do not know the number of other experiments that need to run, and the proportions of the user base they would need in order to complete in a reasonable duration. However, the change does not seem risky since it only slightly perturbs the a single use case, and so we should want to complete the experiment in the minimum possible duration.</p>
+<p>There is a slightly subtle point here. Since we need at least 14 days to pass between a user enrolling, and Udacity checking the corresponding payments, we would not be in a position to analyze the experiment results until 14 days after the end of the experiment. Therefore the total duration of the experiment proper would be 31 days. (And other experiments that may affect the evaluation metrics should not be allowed to run in those last 14 days.)</p>
 </div>
 </div>
 <div id="experiment-analysis" class="section level2">
@@ -212,12 +212,20 @@ img {
 </div>
 <div id="recommendation" class="section level2">
 <h2>Recommendation</h2>
-<p>My recommendation for Udacity is that the feature in question be implemented. The tests have shown that it is very likely (95%) that the feature will reduce the number of students enrolling for the course without significantly decreasing the proportion who end up paying (and staying enrolled.)</p>
-<p>This means that Udacity coaches will be able to devote more time to each enrolled student. Overall, students will have a better relationship with Udacity, as those who enrolled will have more support and those who didn’t will have been advised against potentially wasting their time and money. ## Follow-Up Experiment</p>
-<p>I would be interested in running an experiment to test the effect of email status/progress reports on student retention. My conjecture is that a student’s motivation and commitment to their online courses may decrease over time. This can first be checked against observational data from Udacity’s records.</p>
-<p>If it is well supported by observational data, I would hypothesize that a weekly recognition of accomplishments in the course, as well as time spent on online materials (that Udacity can track), could have a positive effect on a student’s level of involvement in the course. This would translate into higher retention and ultimately higher completion rates.</p>
-<p>If we choose the metrics to be completion and retention rates, and the unit of diversion to be the user-id, then this will necessarily be a long-term experiment - perhaps lasting a full year. However, weekly emails are not a very risky feature, and we can allow for the user to opt-out, in which case a third metric would be opt-out rates.</p>
-<p>Instead of measuring completion rates, we can also make use of the well supported notion that “more time spent course leads to higher completion rates” and use “time spent on online course materials” as our metric. This can be a shorter experiment, possibly spanning only a few months.</p>
+<p>My recommendation for Udacity is that the feature in question not be implemented immediately.</p>
+<p>The tests have shown that it is very likely (95%) that the feature will reduce the number of students enrolling for the course. If this effect is combined with an unaffected net conversion rate, then the feature will have reduced Udacity’s cost (Coaching Time) per paying student.</p>
+<p>And although we found the change in net conversion to be statistically and practically insignificant, our confidence interval for its effect size does include the negative practical significance boundary (-0.0075). This means that we cannot say confidently that the net conversion did not decrease by less than .75%.</p>
+<p>This makes implementing the feature unnecessarily risky, and we should either devote more resources to testing the effect (and reduce the size of the confidence interval), or abandon the feature.</p>
+</div>
+<div id="follow-up-experiment" class="section level2">
+<h2>Follow-Up Experiment</h2>
+<p>I would be interested in running an experiment to test the effect of email status/progress reports on student retention (past the 14 day boundary). My conjecture is that a student’s motivation and commitment to their online courses may decrease over time. This can first be checked against observational data from Udacity’s records.</p>
+<p>If it is well supported by observational data, I would hypothesize that a periodic recognition of accomplishments in the course, as well as time spent on online materials (that Udacity can track), could have a positive effect on a student’s level of involvement in the course. This would then translate into higher retention.</p>
+<p>To test this, we have to first decide on a reasonable interval between progress report emails.</p>
+<p>We could perform a multivariate test by splitting subjects into a number of groups each having a email frequency, as well as a control group. However, this will necessarily take a longer time, and it would be unwise given that this feature may somehow have the exact opposite of the hypothesized effect.</p>
+<p>We want to affect the retention of students in a two week period, so I would suggest a 3-day interval between progress reports.</p>
+<p>If we choose the unit of diversion to be the user-id, and directly evaluate retention rates, then this experiment may take too long. However, weekly emails are not a very risky feature, and we can allow for the user to opt-out, in which case a second metric would be opt-out rates.</p>
+<p>To reduce the runtime of experiment, we can use net conversion as our evaluation metric - as we did in this experiment. One caveat, however, is that the unit of analysis in that case would be the number of clicks to start a free trial, and so our analytic estimate of variance may first need to be revised empirically in order to accurately size the experiment.</p>
 </div>
 
 
