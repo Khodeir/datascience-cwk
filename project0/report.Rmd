@@ -23,10 +23,19 @@ Our independent variable is the time taken to name the colors in equally-sized l
 
 **What is an appropriate set of hypotheses for this task? What kind of statistical test do you expect to perform? Justify your choices.**
 
-An appropriate null hypothesis is that there is no difference in the time taken to name all the colors in the list.
+An appropriate null hypothesis is that there is no difference in the time taken to name all the colors in the list. Since the data are paired (each subject is present in both the congruent and incongruent groups) and are thus dependent or correlated, it is necessary to use a paired difference test. 
 
-A good alternative hypothesis is that it takes longer to name the colors in the incongruous condition. In this case I would perform a one-tailed hypothesis test. Depending on the distribution of the data, I would use either a t-test or a non-parametric test such as the Wilcoxon signed-rank test.
+For each subject (row) in the data, the difference is:
+$$ t_{difference}^{(i)} = t_{incongruent}^{(i)} - t_{congruent}^{(i)} $$
+Thus the null hypothesis is:
+$$ H_0 : \mu_{difference} = 0 $$
+$$ \mu_{difference} = \frac{\sum_{i=1}^N t_{difference}^{(i)}}{N}  $$
 
+
+A good alternative hypothesis is that it takes longer to name the colors in the incongruous condition - that was the case for my attempt. In this case I would perform a one-tailed test. Depending on the distribution of the data, I would use either a t-test or a non-parametric test such as the Wilcoxon signed-rank test.
+
+ie.
+$$ H_1 : \mu_{difference} > 0 $$
 
 **Report some descriptive statistics regarding this dataset. Include at least one measure of central tendency and at least one measure of variability.**
 
