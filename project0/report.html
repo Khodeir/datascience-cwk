@@ -70,9 +70,8 @@ img {
 
 <div id="references" class="section level2">
 <h2>References</h2>
-<ul>
-<li><a href="http://www.biostathandbook.com/pairedttest.html" class="uri">http://www.biostathandbook.com/pairedttest.html</a></li>
-</ul>
+<p>[1] <a href="http://www.biostathandbook.com/pairedttest.html" class="uri">http://www.biostathandbook.com/pairedttest.html</a></p>
+<p>[2] <a href="http://oak.ucc.nau.edu/rh232/courses/EPS525/Handouts/Understanding%20the%20Dependent%20t%20Test.pdf">http://oak.ucc.nau.edu/rh232/courses/EPS525/Handouts/Understanding%20the%20Dependent%20t%20Test.pdf</a></p>
 </div>
 <div id="questions" class="section level2">
 <h2>Questions</h2>
@@ -81,10 +80,12 @@ img {
 <p>Our independent variable is the time taken to name the colors in equally-sized lists.</p>
 <p><strong>What is an appropriate set of hypotheses for this task? What kind of statistical test do you expect to perform? Justify your choices.</strong></p>
 <p>An appropriate null hypothesis is that there is no difference in the time taken to name all the colors in the list. Since the data are paired (each subject is present in both the congruent and incongruent groups) and are thus dependent or correlated, it is necessary to use a paired difference test.</p>
-<p>For each subject (row) in the data, the difference is: <span class="math">\[ t_{difference}^{(i)} = t_{incongruent}^{(i)} - t_{congruent}^{(i)} \]</span> Thus the null hypothesis is: <span class="math">\[ H_0 : \mu_{difference} = 0 \]</span> <span class="math">\[ \mu_{difference} = \frac{\sum_{i=1}^N t_{difference}^{(i)}}{N}  \]</span></p>
+<p>If we think of the data as being the set of difference scores, the null hypothesis becomes the hypothesis that the mean of a population of difference scores (denoted <span class="math">\(\mu_{difference}\)</span>) equals 0. [2]</p>
+<p>Thus the null hypothesis is: <span class="math">\[ H_0 : \mu_{difference} = \mu_{incongruent} - \mu_{congruent} = 0 \]</span></p>
 <p>A good alternative hypothesis is that it takes longer to name the colors in the incongruous condition - that was the case for my attempt. In this case I would perform a one-tailed test. Depending on the distribution of the data, I would use either a t-test or a non-parametric test such as the Wilcoxon signed-rank test.</p>
-<p>ie. <span class="math">\[ H_1 : \mu_{difference} &gt; 0 \]</span></p>
+<p>ie. <span class="math">\[ H_1 : \mu_{difference} =  \mu_{incongruent} - \mu_{congruent} &gt; 0 \]</span></p>
 <p><strong>Report some descriptive statistics regarding this dataset. Include at least one measure of central tendency and at least one measure of variability.</strong></p>
+<p>Because we can effectively view our matched-pairs hypothesis test as a one-sample test of the difference, i will only consider descriptive statistics of the set of differences (<span class="math">\(t_{incongruent} - t_{congruent}\)</span>).</p>
 <pre><code>## Mean:                7.965
 ## Median:              7.666
 ## Standard Deviation:  4.865</code></pre>

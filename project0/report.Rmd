@@ -11,7 +11,9 @@ data$Difference <- data$Incongruent - data$Congruent
 ```
 ## References
 
-* http://www.biostathandbook.com/pairedttest.html
+[1] http://www.biostathandbook.com/pairedttest.html
+
+[2] http://oak.ucc.nau.edu/rh232/courses/EPS525/Handouts/Understanding%20the%20Dependent%20t%20Test.pdf
 
 ## Questions
 
@@ -25,19 +27,19 @@ Our independent variable is the time taken to name the colors in equally-sized l
 
 An appropriate null hypothesis is that there is no difference in the time taken to name all the colors in the list. Since the data are paired (each subject is present in both the congruent and incongruent groups) and are thus dependent or correlated, it is necessary to use a paired difference test. 
 
-For each subject (row) in the data, the difference is:
-$$ t_{difference}^{(i)} = t_{incongruent}^{(i)} - t_{congruent}^{(i)} $$
-Thus the null hypothesis is:
-$$ H_0 : \mu_{difference} = 0 $$
-$$ \mu_{difference} = \frac{\sum_{i=1}^N t_{difference}^{(i)}}{N}  $$
+If we think of the data as being the set of difference scores, the null hypothesis becomes the hypothesis that the mean of a population of difference scores (denoted $\mu_{difference}$) equals 0. [2]
 
+Thus the null hypothesis is:
+$$ H_0 : \mu_{difference} = \mu_{incongruent} - \mu_{congruent} = 0 $$
 
 A good alternative hypothesis is that it takes longer to name the colors in the incongruous condition - that was the case for my attempt. In this case I would perform a one-tailed test. Depending on the distribution of the data, I would use either a t-test or a non-parametric test such as the Wilcoxon signed-rank test.
 
 ie.
-$$ H_1 : \mu_{difference} > 0 $$
+$$ H_1 : \mu_{difference} =  \mu_{incongruent} - \mu_{congruent} > 0 $$
 
 **Report some descriptive statistics regarding this dataset. Include at least one measure of central tendency and at least one measure of variability.**
+
+Because we can effectively view our matched-pairs hypothesis test as a one-sample test of the difference, i will only consider descriptive statistics of the set of differences ($t_{incongruent} - t_{congruent}$).
 
 ```{r, echo = FALSE}
 writeLines(sprintf("Mean:\t\t\t\t%.3f\nMedian:\t\t\t\t%.3f\nStandard Deviation:\t%.3f",mean(data$Difference),median(data$Difference),sd(data$Difference)))
