@@ -1,20 +1,28 @@
-var svg = dimple.newSvg("#chartContainer", 590, 400);
-d3.csv("corrogated_by_month.csv", function (data) {
-  
-  var myChart = new dimple.chart(svg, data);
+d3.csv("stock_data.csv", function (data) {
+  var startDate = new Date("2014-06-01");
+  var endDate = new Date("2016-01-01");
+   data = data.filter(function(d){
+    var date = new Date(d.Date);
+    return (date<endDate) & (date>startDate);
+   });
+  var svg = dimple.newSvg('#mainChartContainer', "100%", "50%");
+  var chart = new dimple.chart(svg, data);
+  chart.setBounds("10%", "10%", "70%", "70%");
+  var x = chart.addTimeAxis("x", "Date", "%Y-%m-%d", "%b %Y");
+  var z = chart.addMeasureAxis("z", "Tons available at start of month");
+  var y = chart.addMeasureAxis("y", "Tons sold all month")
+  var line = chart.addSeries(null, dimple.plot.line);
+  var bubble = chart.addSeries(null, dimple.plot.bubble);
 
-  myChart.setBounds(60, 30, 350, 330);
+  line.addEventHandler('mouseover', function(){
 
-  var x = myChart.addTimeAxis("x", "date");
-
-  var y = myChart.addMeasureAxis("y", "weight");
-
-  var s = myChart.addSeries("product_name", dimple.plot.bar);
-  
-  s.addOrderRule(function(cand1,cand2){
-    return d3.sum(cand1, 'weight') > d3.sum(cand2, 'weight');
   });
+  
+  chart.draw();
 
-  myChart.addLegend(430, 20, 100, 300, "left");
-  myChart.draw();
+  x.shapes.selectAll("text").attr("transform",
+    function (d) {
+      return d3.select(this).attr("transform") + " translate(0, 20) rotate(-45)";
+    });
+
 });

@@ -1,12 +1,40 @@
 <html>
   <head>
+    <title>Warehouse Visualization</title>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.12/d3.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dimple/2.1.6/dimple.latest.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
   </head>
   <body>
-    <div id="chartContainer">
+    
+    <div class="container">
+      <div class="col-md-12 col-xs-12 col-s-12 col-lg-10 col-lg-offset-1">
+        <div class="page-header">
+          <h2 class="center">Sales and stock over time</h2>
+        </div>
+        <p>This graph presents the monthly totals of sales and warehouse stock of an anonymous mid-sized trading company. The company operated a single warehouse <strong class="highlight">until August 2015, when a second warehouse more than doubled its capacity.</strong></p>
 
+
+
+        <div id="mainChartContainer">
+        </div>
+
+        <p><strong>Despite this extra capacity, sales remain unchanged, with a ceiling or upper bound of 1,200 tons per month.</strong> This translates into an increase in working capital without a corresponding increase in revenue.</p>
+        <p>In the coming months, the company intends to become focused on bolstering its sales effort, with emphasis on customer aquisition.</p>
+
+      </div>
     </div>
+
+    
     <script type="text/javascript" src="main.js"></script>
     <link rel="stylesheet" href="main.css" />
   </body>
