@@ -1,3 +1,14 @@
 #mainChartContainer{
 	margin-bottom: 20px;
 }
+.legendcircles {
+	fill: #80b1d3;
+	stroke: #6b94b0;
+	opacity: .8;
+}
+.legendtext {
+	font-size: 11px;
+}
+.legendtitle {
+	font-weight: bold;
+}
